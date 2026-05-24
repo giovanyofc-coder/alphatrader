@@ -36,10 +36,7 @@
     "plugins": [],
     "scheme": "iatrader",
     "extra": {
-      "eas": {
-        "projectId": "1327cffb-cb05-4531-aa2b-0becfc9c9284"
-      }
-    },
-    "owner": "giovanyofc"
+      "eas": {}
+    }
   }
 }
