@@ -28,15 +28,7 @@ jobs:
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📦 Install dependencies
-        
         run: npm install
 
-      - name: 🚀 Build APK
-        
-        run: eas build -p android --profile preview --local --output build/alpha-trader.apk
-
-      - name: 📤 Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: alpha-trader-apk
-          path: build/alpha-trader.apk
+      - name: 🚀 Build APK (Expo Cloud)
+        run: eas build -p android --profile preview --non-interactive
