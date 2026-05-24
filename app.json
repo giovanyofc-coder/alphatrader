@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Alphatrader",
+    "name": "AlphaTrader",
     "slug": "alphatrader",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.iatrader.app"
+      "bundleIdentifier": "com.alphatrader.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0f"
       },
-      "package": "com.iatrader.app",
+      "package": "com.alphatrader.app",
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
@@ -34,7 +34,7 @@
       "bundler": "metro"
     },
     "plugins": [],
-    "scheme": "iatrader",
+    "scheme": "alphatrader",
     "extra": {
       "eas": {}
     }
