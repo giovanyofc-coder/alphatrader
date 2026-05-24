@@ -36,7 +36,9 @@
     "plugins": [],
     "scheme": "alphatrader",
     "extra": {
-      "eas": {}
+      "eas": {
+        "projectId": "93754359-2e11-4770-b98a-446702330a84"
+      }
     }
   }
 }
