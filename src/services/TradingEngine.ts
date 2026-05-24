@@ -10,6 +10,8 @@ import { binanceAPI, KlineData } from './BinanceAPI';
 import { generateSignal } from '../utils/indicators';
 import { saveTrade, TradeRecord } from '../utils/storage';
 
+import { zapiaBridge } from './ZapiaBridge';
+
 export interface TradingState {
   isActive: boolean;
   isDemoMode: boolean;
@@ -80,6 +82,9 @@ class TradingEngine {
   private emit(partial: Partial<TradingState>): void {
     Object.assign(this.state, partial);
     this.onStateUpdate?.(partial);
+    
+    // Sincroniza com Zapia
+    zapiaBridge.syncState(this.getState());
   }
 
   /**
@@ -185,6 +190,17 @@ class TradingEngine {
     if (!this.state.isActive) return;
 
     try {
+      // 0. Verifica comandos remotos do Zapia
+      const commands = await zapiaBridge.getCommands();
+      if (commands.includes('STOP')) {
+        console.log('[TradingEngine] Comando remoto: STOP');
+        await this.stop();
+        return;
+      }
+      if (commands.includes('RESET_PROFIT')) {
+        this.resetProfit();
+      }
+
       // 1. Atualiza dados de mercado
       const newKlines = await binanceAPI.getKlines('BTCUSDT', '5m', 5);
 
@@ -248,6 +264,13 @@ class TradingEngine {
       console.error('[TradingEngine] Erro no ciclo:', msg);
       this.emit({ error: msg });
     }
+  }
+
+  /**
+   * Reseta o contador de lucros
+   */
+  resetProfit(): void {
+    this.emit({ profitUSD: 0, profitBRL: 0, totalTrades: 0, successfulTrades: 0 });
   }
 
   /**

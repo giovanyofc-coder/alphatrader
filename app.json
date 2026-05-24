@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Alphatrader",
-    "slug": "alphatrader",
+    "name": "ia-trader",
+    "slug": "ia-trader",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",

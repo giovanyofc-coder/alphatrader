@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { tradingEngine, TradingState } from './TradingEngine';
 import { loadCredentials, loadData, STORAGE_KEYS } from '../utils/storage';
+import { zapiaBridge } from './ZapiaBridge';
 
 interface TradingContextType {
   state: TradingState;
@@ -33,6 +34,10 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
       if (creds.apiKey) setApiKey(creds.apiKey);
       if (creds.secretKey) setSecretKey(creds.secretKey);
       setIsConnected(creds.isConnected);
+
+      // Carrega token do Zapia
+      const zapiaToken = await loadData(STORAGE_KEYS.ZAPIA_TOKEN);
+      if (zapiaToken) zapiaBridge.setToken(zapiaToken);
 
       // Carrega configurações salvas
       const demoMode = await loadData(STORAGE_KEYS.DEMO_MODE);
