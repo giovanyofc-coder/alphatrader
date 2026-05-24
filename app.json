@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ia-trader",
-    "slug": "ia-trader",
+    "slug": "alphatrader",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -11,9 +11,6 @@
       "resizeMode": "contain",
       "backgroundColor": "#0a0a0f"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.iatrader.app"
@@ -34,12 +31,15 @@
       "bundler": "metro"
     },
     "plugins": [],
-    "scheme": "iatrader",
     "extra": {
       "eas": {
-        "projectId": "1327cffb-cb05-4531-aa2b-0becfc9c9284"
+        "projectId": "93754359-2e11-4770-b98a-446702330a84"
       }
     },
-    "owner": "giovanyofc"
+    "owner": "giovanyofc",
+    "scheme": "iatrader",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
   }
 }
