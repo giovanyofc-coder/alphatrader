@@ -16,4 +16,4 @@ jobs:
           eas-version: latest
           token: ${{ secrets.EXPO_TOKEN }}
       - name: Build APK (Remote)
-        run: eas build --platform android --profile preview --non-interactive --no-wait --id 93754359-2e11-4770-b98a-446702330a84
+        run: eas build --platform android --profile preview --non-interactive --no-wait
