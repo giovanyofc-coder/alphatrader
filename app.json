@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "AlphaTrader",
-    "slug": "alphatrader",
+    "name": "ia-trader",
+    "slug": "ia-trader",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.alphatrader.app"
+      "bundleIdentifier": "com.iatrader.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0a0a0f"
       },
-      "package": "com.alphatrader.app",
+      "package": "com.iatrader.app",
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
@@ -34,11 +34,12 @@
       "bundler": "metro"
     },
     "plugins": [],
-    "scheme": "alphatrader",
+    "scheme": "iatrader",
     "extra": {
       "eas": {
-        "projectId": "93754359-2e11-4770-b98a-446702330a84"
+        "projectId": "1327cffb-cb05-4531-aa2b-0becfc9c9284"
       }
-    }
+    },
+    "owner": "giovanyofc"
   }
 }
