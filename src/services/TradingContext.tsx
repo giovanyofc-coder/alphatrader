@@ -17,6 +17,7 @@ interface TradingContextType {
   setDemoMode: (isDemo: boolean) => void;
   setProfitGoal: (goal: number) => void;
   setSpendingLimit: (percent: number) => void;
+  setSymbol: (symbol: string) => void;
   resetProfit: () => void;
 }
 
@@ -83,6 +84,11 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, spendingLimitPercent: percent }));
   }, []);
 
+  const setSymbol = useCallback((symbol: string) => {
+    tradingEngine.setSymbol(symbol);
+    setState(prev => ({ ...prev, selectedSymbol: symbol }));
+  }, []);
+
   const resetProfit = useCallback(() => {
     tradingEngine.resetProfit();
   }, []);
@@ -99,6 +105,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
         setDemoMode,
         setProfitGoal,
         setSpendingLimit,
+        setSymbol,
         resetProfit,
       }}
     >
