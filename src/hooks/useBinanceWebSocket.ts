@@ -1,11 +1,8 @@
 /**
  * Hook para conexão com WebSocket da Binance
- * Recebe dados de kline (candlestick) ao vivo para BTC/USDT
+ * Recebe dados de kline (candlestick) ao vivo para um símbolo específico
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
-
-// URL do WebSocket da Binance para klines de 5 minutos
-const WS_URL = 'wss://stream.binance.com:9443/ws/btcusdt@kline_5m';
 
 export interface LiveCandle {
   time: number;       // Timestamp de abertura
@@ -33,7 +30,7 @@ interface UseWebSocketReturn {
 
 const MAX_HISTORY = 60; // Mantém últimas 60 cotações para o gráfico
 
-export function useBinanceWebSocket(): UseWebSocketReturn {
+export function useBinanceWebSocket(symbol: string = 'BTCUSDT'): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectCount = useRef(0);
@@ -55,13 +52,17 @@ export function useBinanceWebSocket(): UseWebSocketReturn {
     }
 
     setWsStatus(prev => ({ ...prev, reconnecting: reconnectCount.current > 0 }));
-    console.log('[WebSocket] Conectando à Binance...');
+    
+    const formattedSymbol = symbol.toLowerCase();
+    const WS_URL = `wss://stream.binance.com:9443/ws/${formattedSymbol}@kline_1m`;
+    
+    console.log(`[WebSocket] Conectando à Binance (${symbol})...`);
 
     const ws = new WebSocket(WS_URL);
     wsRef.current = ws;
 
     ws.onopen = () => {
-      console.log('[WebSocket] Conectado à Binance!');
+      console.log(`[WebSocket] Conectado à Binance (${symbol})!`);
       reconnectCount.current = 0;
       setWsStatus({ connected: true, error: null, reconnecting: false });
     };
@@ -115,8 +116,7 @@ export function useBinanceWebSocket(): UseWebSocketReturn {
       if (reconnectCount.current < 10) {
         const delay = Math.min(1000 * Math.pow(2, reconnectCount.current), 30000);
         reconnectCount.current++;
-        console.log(`[WebSocket] Reconectando em ${delay}ms... (tentativa ${reconnectCount.current})`);
-
+        
         reconnectRef.current = setTimeout(() => {
           connect();
         }, delay);
@@ -128,17 +128,18 @@ export function useBinanceWebSocket(): UseWebSocketReturn {
         }));
       }
     };
-  }, []);
+  }, [symbol]);
 
-  // Inicia conexão ao montar e limpa ao desmontar
+  // Inicia conexão ao montar ou mudar o símbolo
   useEffect(() => {
+    setPriceHistory([]); // Limpa histórico ao mudar símbolo
     connect();
 
     return () => {
       if (reconnectRef.current) clearTimeout(reconnectRef.current);
-      if (wsRef.current) wsRef.current.close(1000, 'Componente desmontado');
+      if (wsRef.current) wsRef.current.close(1000, 'Componente desmontado ou símbolo alterado');
     };
-  }, [connect]);
+  }, [connect, symbol]);
 
   return {
     currentCandle,
