@@ -17,9 +17,19 @@ interface PriceChartProps {
   priceHistory: number[];
   lastPrice: number;
   wsStatus: WebSocketStatus;
+  symbol?: string;
 }
 
-export function PriceChart({ priceHistory, lastPrice, wsStatus }: PriceChartProps) {
+export function PriceChart({ 
+  priceHistory, 
+  lastPrice, 
+  wsStatus, 
+  symbol = 'BTC/USDT' 
+}: PriceChartProps) {
+  // Formata o símbolo para exibição (ex: BTCUSDT -> BTC/USDT)
+  const displaySymbol = symbol.includes('/') 
+    ? symbol 
+    : symbol.replace('USDT', '/USDT').replace('BRL', '/BRL');
   // Prepara dados para o gráfico — usa os últimos 30 pontos
   const chartData = useMemo(() => {
     const data = priceHistory.length > 0 ? priceHistory.slice(-30) : [0];
@@ -45,7 +55,7 @@ export function PriceChart({ priceHistory, lastPrice, wsStatus }: PriceChartProp
       {/* Cabeçalho do gráfico */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.symbol}>BTC/USDT</Text>
+          <Text style={styles.symbol}>{displaySymbol}</Text>
           <Text style={[styles.price, { color: lineColor }]}>
             {lastPrice > 0 ? formatUSD(lastPrice) : '---'}
           </Text>
