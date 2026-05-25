@@ -13,6 +13,7 @@ export const STORAGE_KEYS = {
   TIME_LIMIT: '@iatrader:timeLimit',
   DEMO_MODE: '@iatrader:demoMode',
   TRADE_HISTORY: '@iatrader:tradeHistory',
+  ZAPIA_TOKEN: '@iatrader:zapiaToken',
 };
 
 /**

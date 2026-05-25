@@ -22,13 +22,15 @@ import { NeonCard } from '../components/NeonCard';
 import { NeonButton } from '../components/NeonButton';
 import { NeonInput } from '../components/NeonInput';
 import { ConnectionStatusBadge } from '../components/ConnectionStatusBadge';
-import { saveCredentials, loadCredentials, clearCredentials } from '../utils/storage';
+import { saveCredentials, loadCredentials, clearCredentials, saveData, loadData, STORAGE_KEYS } from '../utils/storage';
 import { binanceAPI } from '../services/BinanceAPI';
+import { zapiaBridge } from '../services/ZapiaBridge';
 import { maskApiKey } from '../utils/formatters';
 
 export default function CorretoraScreen() {
   const [apiKey, setApiKey] = useState('');
   const [secretKey, setSecretKey] = useState('');
+  const [zapiaToken, setZapiaToken] = useState('');
   const [isConnected, setIsConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [validating, setValidating] = useState(false);
@@ -39,7 +41,13 @@ export default function CorretoraScreen() {
     async function load() {
       setLoading(true);
       const creds = await loadCredentials();
+      const savedZapiaToken = await loadData(STORAGE_KEYS.ZAPIA_TOKEN);
+      
       if (creds.apiKey) setSavedApiKey(creds.apiKey);
+      if (savedZapiaToken) {
+        setZapiaToken(savedZapiaToken);
+        zapiaBridge.setToken(savedZapiaToken);
+      }
       setIsConnected(creds.isConnected);
       setLoading(false);
     }
@@ -103,6 +111,21 @@ export default function CorretoraScreen() {
       );
     } finally {
       setValidating(false);
+    }
+  }
+
+  /**
+   * Salva o token do Zapia localmente
+   */
+  async function handleSaveZapiaToken() {
+    if (!zapiaToken.trim()) return;
+    
+    try {
+      await saveData(STORAGE_KEYS.ZAPIA_TOKEN, zapiaToken.trim());
+      zapiaBridge.setToken(zapiaToken.trim());
+      Alert.alert('Zapia Conectado', 'O bot agora pode se comunicar com o Zapia!');
+    } catch (e) {
+      Alert.alert('Erro', 'Falha ao salvar o token do Zapia.');
     }
   }
 
@@ -239,6 +262,28 @@ export default function CorretoraScreen() {
         </NeonCard>
 
         {/* Card de Segurança */}
+        <NeonCard accent="primary">
+          <Text style={styles.formTitle}>🚀 CONEXÃO ZAPIA</Text>
+          <Text style={styles.infoBody}>
+            Conecte o Alphatrader ao seu Zapia para receber relatórios em tempo real e enviar comandos de voz.
+          </Text>
+          <View style={{ marginTop: SPACING.md }}>
+            <NeonInput
+              label="Token do GitHub (Personal Access Token)"
+              placeholder="ghp_..."
+              value={zapiaToken}
+              onChangeText={setZapiaToken}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+            <NeonButton 
+              title="Vincular Zapia" 
+              onPress={handleSaveZapiaToken}
+              style={{ marginTop: SPACING.md }}
+            />
+          </View>
+        </NeonCard>
+
         <NeonCard accent="danger">
           <Text style={styles.infoTitle}>🔒 SEGURANÇA</Text>
           <Text style={styles.infoBody}>

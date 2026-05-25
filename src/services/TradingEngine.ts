@@ -10,15 +10,27 @@ import { binanceAPI, KlineData } from './BinanceAPI';
 import { generateSignal } from '../utils/indicators';
 import { saveTrade, TradeRecord } from '../utils/storage';
 
+import { zapiaBridge } from './ZapiaBridge';
+
+export interface LogEntry {
+  id: string;
+  timestamp: number;
+  message: string;
+  type: 'INFO' | 'SUCCESS' | 'WARNING' | 'ERROR';
+}
+
 export interface TradingState {
   isActive: boolean;
   isDemoMode: boolean;
   currentPrice: number;
+  usdtBalance: number;       // Saldo em USDT
+  spendingLimitPercent: number; // % do saldo a usar por trade
   profitUSD: number;
   profitBRL: number;
   profitGoalBRL: number;
   openTrade: OpenTrade | null;
   lastSignal: string;
+  logs: LogEntry[];          // Histórico recente
   rsi: number;
   trend: string;
   ema20: number;
@@ -37,6 +49,7 @@ export interface OpenTrade {
   buyTimestamp: number;
   currentPnlPercent: number;
   currentPnlUSD: number;
+  highestPrice: number; // Para Trailing Stop
 }
 
 // Callbacks para atualização do estado
@@ -49,11 +62,14 @@ class TradingEngine {
     isActive: false,
     isDemoMode: true,        // MODO DEMO habilitado por padrão (segurança)
     currentPrice: 0,
+    usdtBalance: 0,
+    spendingLimitPercent: 1.5, // 1.5% por padrão
     profitUSD: 0,
     profitBRL: 0,
     profitGoalBRL: 200,
     openTrade: null,
     lastSignal: 'Aguardando...',
+    logs: [],
     rsi: 50,
     trend: 'NEUTRAL',
     ema20: 0,
@@ -80,6 +96,9 @@ class TradingEngine {
   private emit(partial: Partial<TradingState>): void {
     Object.assign(this.state, partial);
     this.onStateUpdate?.(partial);
+    
+    // Sincroniza com Zapia
+    zapiaBridge.syncState(this.getState());
   }
 
   /**
@@ -105,6 +124,13 @@ class TradingEngine {
   }
 
   /**
+   * Define o limite de gasto por trade (%)
+   */
+  setSpendingLimit(percent: number): void {
+    this.emit({ spendingLimitPercent: percent });
+  }
+
+  /**
    * Inicia o motor de trading
    * Verifica indicadores a cada 30 segundos
    */
@@ -113,6 +139,7 @@ class TradingEngine {
 
     console.log('[TradingEngine] Iniciando motor de trading...');
     this.emit({ isActive: true, error: null });
+    this.addLog(`Iniciando IA (${this.state.isDemoMode ? 'Modo Demo' : 'Modo Real'})`, 'INFO');
 
     // Configura credenciais
     binanceAPI.setCredentials(apiKey, secretKey);
@@ -154,6 +181,8 @@ class TradingEngine {
     if (this.state.openTrade) {
       await this.closeTrade('Motor parado manualmente');
     }
+    
+    this.addLog('IA Interrompida pelo usuário', 'WARNING');
 
     this.emit({
       isActive: false,
@@ -185,31 +214,65 @@ class TradingEngine {
     if (!this.state.isActive) return;
 
     try {
+      // 0. Atualiza saldo da Binance
+      let currentBalance = 0;
+      if (this.state.isDemoMode) {
+        currentBalance = 1000; // Demo fixo em $1000 por enquanto
+      } else {
+        try {
+          currentBalance = await binanceAPI.getBalance('USDT');
+        } catch (e) {
+          console.warn('[TradingEngine] Falha ao atualizar saldo real');
+          currentBalance = this.state.usdtBalance; // Mantém o último
+        }
+      }
+      this.emit({ usdtBalance: currentBalance });
+
+      // 0. Verifica comandos remotos do Zapia
+      const commands = await zapiaBridge.getCommands();
+      if (commands.includes('STOP')) {
+        console.log('[TradingEngine] Comando remoto: STOP');
+        await this.stop();
+        return;
+      }
+      if (commands.includes('RESET_PROFIT')) {
+        this.resetProfit();
+      }
+
       // 1. Atualiza dados de mercado
       const newKlines = await binanceAPI.getKlines('BTCUSDT', '5m', 5);
-
-      // Atualiza buffer mantendo os últimos 100 candles
       this.klineBuffer = [...this.klineBuffer.slice(-95), ...newKlines];
 
       const closes = this.klineBuffer.map(k => k.close);
       const volumes = this.klineBuffer.map(k => k.volume);
       const currentPrice = closes[closes.length - 1];
-
       this.emit({ currentPrice, lastUpdate: Date.now() });
 
-      // 2. Atualiza PnL da posição aberta
+      // 2. Atualiza PnL e Trailing Stop da posição aberta
       if (this.state.openTrade) {
         const buyPrice = this.state.openTrade.buyPrice;
+        const highestPrice = Math.max(this.state.openTrade.highestPrice, currentPrice);
         const pnlPercent = ((currentPrice - buyPrice) / buyPrice) * 100;
         const pnlUSD = (currentPrice - buyPrice) * this.state.openTrade.quantity;
+        
+        // Distância do topo (Trailing Stop)
+        const dropFromHigh = ((highestPrice - currentPrice) / highestPrice) * 100;
 
         this.emit({
           openTrade: {
             ...this.state.openTrade,
             currentPnlPercent: pnlPercent,
             currentPnlUSD: pnlUSD,
+            highestPrice: highestPrice,
           },
         });
+
+        // 2.1 Verifica gatilho do Trailing Stop (ex: caiu 0.5% do topo estando no lucro)
+        if (pnlPercent > 0.2 && dropFromHigh >= 0.5) {
+          console.log(`[TradingEngine] 📉 Trailing Stop acionado! Queda de ${dropFromHigh.toFixed(2)}% do topo.`);
+          await this.closeTrade(`Trailing Stop acionado (${dropFromHigh.toFixed(2)}% do topo)`);
+          return;
+        }
       }
 
       // 3. Verifica se meta foi atingida
@@ -271,8 +334,8 @@ class TradingEngine {
         return;
       }
 
-      // Usa 1.5% do saldo disponível
-      const tradeAmountUSDT = usdtBalance * 0.015;
+      // Usa porcentagem configurada do saldo disponível
+      const tradeAmountUSDT = usdtBalance * (this.state.spendingLimitPercent / 100);
       const quantity = tradeAmountUSDT / currentPrice;
 
       console.log(
@@ -288,6 +351,8 @@ class TradingEngine {
         order = await binanceAPI.placeBuyOrder('BTCUSDT', quantity);
       }
 
+      this.addLog(`COMPRA: BTCUSDT @ $${order.price.toFixed(2)}`, 'SUCCESS');
+
       this.emit({
         openTrade: {
           symbol: 'BTCUSDT',
@@ -296,6 +361,7 @@ class TradingEngine {
           buyTimestamp: order.timestamp,
           currentPnlPercent: 0,
           currentPnlUSD: 0,
+          highestPrice: order.price,
         },
         lastSignal: `${this.state.isDemoMode ? '[DEMO] ' : ''}COMPRA @ $${order.price.toFixed(2)} — ${reason}`,
         error: null,
@@ -355,6 +421,12 @@ class TradingEngine {
       };
       await saveTrade(record);
 
+      this.addLog(
+        `VENDA: ${symbol} @ $${order.price.toFixed(2)} | ` +
+        `Lucro: ${profitBRL >= 0 ? '+' : ''}R$${profitBRL.toFixed(2)}`,
+        profitBRL >= 0 ? 'SUCCESS' : 'ERROR'
+      );
+
       this.emit({
         openTrade: null,
         profitUSD: newTotalProfitUSD,
@@ -371,6 +443,21 @@ class TradingEngine {
       console.error('[TradingEngine] Erro ao fechar posição:', error?.message);
       this.emit({ error: `Falha na venda: ${error?.message}` });
     }
+  }
+
+  /**
+   * Adiciona uma entrada ao diário de operações
+   */
+  private addLog(message: string, type: LogEntry['type'] = 'INFO'): void {
+    const newLog: LogEntry = {
+      id: Date.now().toString() + Math.random().toString(36).substr(2, 5),
+      timestamp: Date.now(),
+      message,
+      type,
+    };
+    
+    const newLogs = [newLog, ...this.state.logs].slice(0, 10); // Mantém apenas os 10 últimos
+    this.emit({ logs: newLogs });
   }
 
   /**

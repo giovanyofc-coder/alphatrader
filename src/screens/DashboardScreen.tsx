@@ -27,6 +27,7 @@ import { PriceChart } from '../components/PriceChart';
 import { AIToggleButton } from '../components/AIToggleButton';
 import { AIStatusPanel } from '../components/AIStatusPanel';
 import { ProfitProgress } from '../components/ProfitProgress';
+import { AILogs } from '../components/AILogs';
 import { NeonCard } from '../components/NeonCard';
 import { NeonInput } from '../components/NeonInput';
 import { useBinanceWebSocket } from '../hooks/useBinanceWebSocket';
@@ -35,11 +36,19 @@ import { saveData, STORAGE_KEYS } from '../utils/storage';
 import { formatDateTime } from '../utils/formatters';
 
 export default function DashboardScreen() {
-  const { state, isConnected, startTrading, stopTrading, setDemoMode, setProfitGoal } =
-    useTradingContext();
+  const { 
+    state, 
+    isConnected, 
+    startTrading, 
+    stopTrading, 
+    setDemoMode, 
+    setProfitGoal, 
+    setSpendingLimit 
+  } = useTradingContext();
 
   // Inputs de configuração
   const [profitGoalInput, setProfitGoalInput] = useState(state.profitGoalBRL.toString());
+  const [spendingLimitInput, setSpendingLimitInput] = useState(state.spendingLimitPercent.toString());
   const [timeLimitInput, setTimeLimitInput] = useState('24');
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -50,6 +59,10 @@ export default function DashboardScreen() {
   useEffect(() => {
     setProfitGoalInput(state.profitGoalBRL.toString());
   }, [state.profitGoalBRL]);
+
+  useEffect(() => {
+    setSpendingLimitInput(state.spendingLimitPercent.toString());
+  }, [state.spendingLimitPercent]);
 
   /**
    * Alterna o estado da IA (liga / desliga)
@@ -91,10 +104,18 @@ export default function DashboardScreen() {
         return;
       }
 
+      // Valida limite de gasto
+      const limit = parseFloat(spendingLimitInput);
+      if (isNaN(limit) || limit <= 0 || limit > 100) {
+        Alert.alert('Limite inválido', 'Defina um limite de gasto entre 0.1% e 100%.');
+        return;
+      }
+
       // Salva configurações
       await saveData(STORAGE_KEYS.PROFIT_GOAL, goal.toString());
       await saveData(STORAGE_KEYS.TIME_LIMIT, timeLimitInput);
       setProfitGoal(goal);
+      setSpendingLimit(limit);
 
       // Confirmação antes de iniciar no modo real
       if (!state.isDemoMode) {
@@ -162,14 +183,19 @@ export default function DashboardScreen() {
         {/* Cabeçalho */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.headerTitle}>⚡ DASHBOARD</Text>
+            <Text style={styles.headerTitle}>⚡ ALPHATRADER</Text>
             <Text style={styles.headerSub}>
               {state.isActive
                 ? `IA Ativa • ${state.isDemoMode ? '🎮 Demo' : '⚡ Real'}`
                 : 'IA Inativa'}
             </Text>
           </View>
-          <Text style={styles.headerTime}>{formatDateTime(Date.now())}</Text>
+          <View style={styles.walletHeader}>
+            <Text style={styles.walletLabel}>SALDO DISPONÍVEL</Text>
+            <Text style={styles.walletValue}>
+              ${state.usdtBalance.toFixed(2)}
+            </Text>
+          </View>
         </View>
 
         {/* Gráfico ao vivo do BTC */}
@@ -220,12 +246,12 @@ export default function DashboardScreen() {
             </View>
             <View style={[styles.goalInput, { marginLeft: SPACING.sm }]}>
               <NeonInput
-                label="Prazo"
-                placeholder="24"
-                value={timeLimitInput}
-                onChangeText={setTimeLimitInput}
+                label="Limite Gasto"
+                placeholder="1.5"
+                value={spendingLimitInput}
+                onChangeText={setSpendingLimitInput}
                 keyboardType="numeric"
-                prefix="h"
+                prefix="%"
                 editable={!state.isActive}
               />
             </View>
@@ -310,6 +336,11 @@ export default function DashboardScreen() {
           </NeonCard>
         )}
 
+        {/* Diário de Operações IA */}
+        {state.isActive && (
+          <AILogs logs={state.logs} />
+        )}
+
         {/* Erro atual */}
         {state.error && (
           <NeonCard accent="danger">
@@ -371,6 +402,20 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: COLORS.textMuted,
     marginTop: 4,
+  },
+  walletHeader: {
+    alignItems: 'flex-end',
+  },
+  walletLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    letterSpacing: 1,
+  },
+  walletValue: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: COLORS.secondary,
   },
 
   // Demo Card

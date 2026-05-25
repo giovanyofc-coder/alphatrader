@@ -144,10 +144,13 @@ export function generateSignal(
 
   // ========================================
   // LÓGICA DE COMPRA (BUY)
-  // Critérios: RSI < 35 (oversold) E EMA20 > EMA50 (uptrend)
+  // Critérios: RSI < 40 E Tendência de Alta (EMA20 > EMA50)
   // ========================================
-  if (rsi < 35 && trend === 'UP' && currentPnlPercent === 0) {
-    const confidence = Math.min(0.9, (35 - rsi) / 35 + (highVolume ? 0.1 : 0));
+  const currentPrice = closes[closes.length - 1];
+  const isBullish = trend === 'UP' && currentPrice > ema20;
+
+  if (rsi < 40 && isBullish && currentPnlPercent === 0) {
+    const confidence = Math.min(0.9, (40 - rsi) / 40 + (highVolume ? 0.1 : 0));
     return {
       action: 'BUY',
       rsi,
@@ -155,52 +158,39 @@ export function generateSignal(
       ema50,
       trend,
       confidence,
-      reason: `RSI sobrevendido (${rsi.toFixed(1)}) + tendência de alta`,
+      reason: `RSI favorável (${rsi.toFixed(1)}) + Tendência de Alta 📈`,
     };
   }
 
   // ========================================
   // LÓGICA DE VENDA (SELL)
-  // Critérios: RSI > 65 OU stop-loss atingido
   // ========================================
   if (currentPnlPercent !== 0) {
-    // Stop-loss: -1%
-    if (currentPnlPercent <= -1) {
+    // 1. Stop-loss hard: -1.5% (segurança máxima)
+    if (currentPnlPercent <= -1.5) {
       return {
         action: 'SELL',
         rsi,
         ema20,
         ema50,
         trend,
-        confidence: 0.95,
-        reason: `Stop-loss acionado (${currentPnlPercent.toFixed(2)}%)`,
+        confidence: 0.99,
+        reason: `Stop-loss de segurança (${currentPnlPercent.toFixed(2)}%)`,
       };
     }
 
-    // Take-profit por RSI
-    if (rsi > 65) {
-      const confidence = Math.min(0.9, (rsi - 65) / 35);
-      return {
-        action: 'SELL',
-        rsi,
-        ema20,
-        ema50,
-        trend,
-        confidence,
-        reason: `RSI sobrecomprado (${rsi.toFixed(1)})`,
-      };
-    }
+    // 2. Take-profit técnico (RSI alto ou Tendência virou)
+    const shouldExit = rsi > 65 || (trend === 'DOWN' && currentPrice < ema20);
 
-    // Tendência inverteu
-    if (trend === 'DOWN' && currentPnlPercent > 0) {
+    if (shouldExit && currentPnlPercent > 0.1) {
       return {
         action: 'SELL',
         rsi,
         ema20,
         ema50,
         trend,
-        confidence: 0.7,
-        reason: 'Tendência reverteu para baixa',
+        confidence: 0.8,
+        reason: rsi > 65 ? `RSI Sobrecomprado (${rsi.toFixed(1)})` : 'Inversão de tendência confirmada',
       };
     }
   }

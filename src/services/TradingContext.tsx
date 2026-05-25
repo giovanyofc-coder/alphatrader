@@ -5,6 +5,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { tradingEngine, TradingState } from './TradingEngine';
 import { loadCredentials, loadData, STORAGE_KEYS } from '../utils/storage';
+import { zapiaBridge } from './ZapiaBridge';
 
 interface TradingContextType {
   state: TradingState;
@@ -15,6 +16,7 @@ interface TradingContextType {
   stopTrading: () => Promise<void>;
   setDemoMode: (isDemo: boolean) => void;
   setProfitGoal: (goal: number) => void;
+  setSpendingLimit: (percent: number) => void;
   resetProfit: () => void;
 }
 
@@ -33,6 +35,10 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
       if (creds.apiKey) setApiKey(creds.apiKey);
       if (creds.secretKey) setSecretKey(creds.secretKey);
       setIsConnected(creds.isConnected);
+
+      // Carrega token do Zapia
+      const zapiaToken = await loadData(STORAGE_KEYS.ZAPIA_TOKEN);
+      if (zapiaToken) zapiaBridge.setToken(zapiaToken);
 
       // Carrega configurações salvas
       const demoMode = await loadData(STORAGE_KEYS.DEMO_MODE);
@@ -72,6 +78,11 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
     setState(prev => ({ ...prev, profitGoalBRL: goal }));
   }, []);
 
+  const setSpendingLimit = useCallback((percent: number) => {
+    tradingEngine.setSpendingLimit(percent);
+    setState(prev => ({ ...prev, spendingLimitPercent: percent }));
+  }, []);
+
   const resetProfit = useCallback(() => {
     tradingEngine.resetProfit();
   }, []);
@@ -87,6 +98,7 @@ export function TradingProvider({ children }: { children: React.ReactNode }) {
         stopTrading,
         setDemoMode,
         setProfitGoal,
+        setSpendingLimit,
         resetProfit,
       }}
     >

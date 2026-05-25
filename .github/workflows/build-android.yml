@@ -17,18 +17,25 @@ jobs:
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: alphatrader/package-lock.json
 
       - name: 🏗 Setup Expo
         uses: expo/expo-github-action@v8
         with:
           expo-version: latest
-          eas-version: latest
           eas-cache: true
           token: ${{ secrets.EXPO_TOKEN }}
 
       - name: 📦 Install dependencies
+        working-directory: ./alphatrader
         run: npm install
 
-      - name: 🚀 Build APK (Expo Cloud)
-        run: eas build -p android --profile preview --non-interactive
+      - name: 🚀 Build APK
+        working-directory: ./alphatrader
+        run: eas build -p android --profile preview --local --output ./build/alpha-trader.apk
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: alpha-trader-apk
+          path: alphatrader/build/alpha-trader.apk

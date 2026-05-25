@@ -6,12 +6,12 @@ App React Native (Expo) com IA para trading automatizado de criptomoedas na Bina
 
 ## 📱 Funcionalidades
 
-- **Gráfico ao vivo** do BTC/USDT via WebSocket da Binance
-- **Motor de IA** com análise de RSI (14), EMA 20/50 e volume
-- **Modo Demo** para testar sem dinheiro real
-- **Meta de lucro em R$** com progresso em tempo real
-- **Stop-loss automático** de 1% por operação
-- **Tema cyberpunk** dark com acentos neon
+- **Motor de IA Avançado**: Integração de RSI (14) + Cruzamento de Médias Móveis (EMA 20/50)
+- **Trailing Stop Dinâmico**: Proteção de lucro automática que acompanha a subida do preço
+- **Gestão de Risco**: Stop-loss de segurança (1.5%) e micro-trades (1.5% do saldo)
+- **Zapia Bridge**: Controle remoto total (Start/Stop/Status) via Zapia (Gist Integration)
+- **Modo Demo**: Simulação realista com saldo fictício para testes seguros
+- **Tema Cyberpunk**: UI otimizada com feedbacks visuais neon e progresso de meta
 
 ---
 
