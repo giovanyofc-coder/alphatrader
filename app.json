@@ -35,6 +35,11 @@
     "scheme": "iatrader",
     "assetBundlePatterns": [
       "**/*"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "93754359-2e11-4770-b98a-446702330a84"
+      }
+    }
   }
 }
