@@ -15,9 +15,15 @@ jobs:
       - name: 🏗 Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node_version: 20
           cache: 'npm'
           cache-dependency-path: alphatrader/package-lock.json
+
+      - name: 🏗 Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
       - name: 🏗 Setup Expo
         uses: expo/expo-github-action@v8
@@ -34,7 +40,7 @@ jobs:
         working-directory: ./alphatrader
         run: eas build -p android --profile preview --local --output ./build/alpha-trader.apk
 
-      - name: 📤 Upload Artifact
+      - name: 📦 Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: alpha-trader-apk
