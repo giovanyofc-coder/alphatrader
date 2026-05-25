@@ -30,7 +30,7 @@ interface UseWebSocketReturn {
 
 const MAX_HISTORY = 60; // Mantém últimas 60 cotações para o gráfico
 
-export function useBinanceWebSocket(symbol: string = 'BTCUSDT'): UseWebSocketReturn {
+export function useBinanceWebSocket(symbol: string = 'BTCBRL'): UseWebSocketReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectCount = useRef(0);
