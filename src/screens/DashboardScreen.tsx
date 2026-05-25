@@ -43,7 +43,8 @@ export default function DashboardScreen() {
     stopTrading, 
     setDemoMode, 
     setProfitGoal, 
-    setSpendingLimit 
+    setSpendingLimit,
+    setSymbol
   } = useTradingContext();
 
   // Inputs de configuração
@@ -53,7 +54,7 @@ export default function DashboardScreen() {
   const [aiLoading, setAiLoading] = useState(false);
 
   // WebSocket ao vivo da Binance
-  const { priceHistory, wsStatus, lastPrice } = useBinanceWebSocket();
+  const { priceHistory, wsStatus, lastPrice } = useBinanceWebSocket(state.selectedSymbol);
 
   // Sincroniza configurações quando o estado muda
   useEffect(() => {
@@ -180,29 +181,65 @@ export default function DashboardScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Cabeçalho */}
+        {/* Cabeçalho com Status Prominente */}
         <View style={styles.header}>
           <View>
             <Text style={styles.headerTitle}>⚡ ALPHATRADER</Text>
-            <Text style={styles.headerSub}>
-              {state.isActive
-                ? `IA Ativa • ${state.isDemoMode ? '🎮 Demo' : '⚡ Real'}`
-                : 'IA Inativa'}
-            </Text>
+            <View style={[
+              styles.statusBadge, 
+              { backgroundColor: state.isActive ? `${COLORS.secondary}22` : `${COLORS.textMuted}22` }
+            ]}>
+              <View style={[
+                styles.statusDot, 
+                { backgroundColor: state.isActive ? COLORS.secondary : COLORS.textMuted }
+              ]} />
+              <Text style={[
+                styles.statusText, 
+                { color: state.isActive ? COLORS.secondary : COLORS.textMuted }
+              ]}>
+                {state.isActive ? 'SISTEMA IA ONLINE' : 'SISTEMA IA OFFLINE'}
+              </Text>
+            </View>
           </View>
           <View style={styles.walletHeader}>
-            <Text style={styles.walletLabel}>SALDO DISPONÍVEL</Text>
+            <Text style={styles.walletLabel}>SALDO</Text>
             <Text style={styles.walletValue}>
               ${state.usdtBalance.toFixed(2)}
             </Text>
           </View>
         </View>
 
-        {/* Gráfico ao vivo do BTC */}
+        {/* Seletor de Ativos */}
+        <View style={styles.symbolSelector}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {state.availableSymbols.map((sym) => (
+              <TouchableOpacity
+                key={sym}
+                onPress={() => setSymbol(sym)}
+                disabled={state.isActive}
+                style={[
+                  styles.symbolItem,
+                  state.selectedSymbol === sym && styles.symbolItemActive
+                ]}
+              >
+                <Text style={[
+                  styles.symbolText,
+                  state.selectedSymbol === sym && styles.symbolTextActive
+                ]}>
+                  {sym.replace('USDT', '')}
+                </Text>
+                {state.selectedSymbol === sym && <View style={styles.symbolDot} />}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Gráfico ao vivo */}
         <PriceChart
           priceHistory={priceHistory}
           lastPrice={lastPrice || state.currentPrice}
           wsStatus={wsStatus}
+          symbol={state.selectedSymbol}
         />
 
         {/* Switch Modo Demo / Real */}
@@ -416,6 +453,63 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '900',
     color: COLORS.secondary,
+  },
+
+  // Status Badge
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginTop: 8,
+    alignSelf: 'flex-start',
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+
+  // Seletor de Ativos
+  symbolSelector: {
+    marginBottom: SPACING.md,
+  },
+  symbolItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    marginRight: SPACING.sm,
+    borderWidth: 1,
+    borderColor: COLORS.cardBorder,
+    alignItems: 'center',
+    minWidth: 80,
+  },
+  symbolItemActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: `${COLORS.primary}11`,
+  },
+  symbolText: {
+    color: COLORS.textMuted,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  symbolTextActive: {
+    color: COLORS.primary,
+  },
+  symbolDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: COLORS.primary,
+    marginTop: 4,
   },
 
   // Demo Card
