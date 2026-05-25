@@ -22,7 +22,7 @@ export interface LogEntry {
 export interface TradingState {
   isActive: boolean;
   isDemoMode: boolean;
-  selectedSymbol: string;    // Símbolo selecionado (ex: BTCUSDT)
+  selectedSymbol: string;    // Símbolo selecionado (ex: BTCBRL)
   availableSymbols: string[]; // Lista de símbolos disponíveis
   currentPrice: number;
   usdtBalance: number;       // Saldo em USDT
@@ -63,8 +63,8 @@ class TradingEngine {
   private state: TradingState = {
     isActive: false,
     isDemoMode: true,        // MODO DEMO habilitado por padrão (segurança)
-    selectedSymbol: 'BTCUSDT',
-    availableSymbols: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'BNBUSDT'],
+    selectedSymbol: 'BTCBRL',
+    availableSymbols: ['BTCBRL', 'ETHBRL', 'SOLBRL', 'DOGEBRL', 'BNBBRL'],
     currentPrice: 0,
     usdtBalance: 0,
     spendingLimitPercent: 1.5, // 1.5% por padrão
