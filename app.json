@@ -1,1 +1,45 @@
-{"expo":{"name":"ia-trader","slug":"alphatrader","owner":"giovanyofc-coder","projectId":"075d9e51-406a-4c2f-be11-855734299b9e","version":"1.0.0","orientation":"portrait","icon":"./assets/icon.png","userInterfaceStyle":"dark","splash":{"image":"./assets/splash.png","resizeMode":"contain","backgroundColor":"#0a0a0f"},"ios":{"supportsTablet":false,"bundleIdentifier":"com.iatrader.app"},"android":{"adaptiveIcon":{"foregroundImage":"./assets/adaptive-icon.png","backgroundColor":"#0a0a0f"},"package":"com.iatrader.app","permissions":["INTERNET","ACCESS_NETWORK_STATE"]},"web":{"favicon":"./assets/favicon.png","bundler":"metro"},"plugins":[],"scheme":"iatrader","assetBundlePatterns":["+*/*"]}}
+{
+  "expo": {
+    "name": "ia-trader",
+    "slug": "alphatrader",
+    "owner": "giovanyofc",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0f"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.iatrader.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0a0f"
+      },
+      "package": "com.iatrader.app",
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [],
+    "scheme": "iatrader",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "93754359-2e11-4770-b98a-446702330a84"
+      }
+    }
+  }
+}
