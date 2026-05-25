@@ -22,6 +22,8 @@ export interface LogEntry {
 export interface TradingState {
   isActive: boolean;
   isDemoMode: boolean;
+  selectedSymbol: string;    // Símbolo selecionado (ex: BTCUSDT)
+  availableSymbols: string[]; // Lista de símbolos disponíveis
   currentPrice: number;
   usdtBalance: number;       // Saldo em USDT
   spendingLimitPercent: number; // % do saldo a usar por trade
@@ -61,6 +63,8 @@ class TradingEngine {
   private state: TradingState = {
     isActive: false,
     isDemoMode: true,        // MODO DEMO habilitado por padrão (segurança)
+    selectedSymbol: 'BTCUSDT',
+    availableSymbols: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT', 'DOGEUSDT', 'BNBUSDT'],
     currentPrice: 0,
     usdtBalance: 0,
     spendingLimitPercent: 1.5, // 1.5% por padrão
@@ -192,17 +196,34 @@ class TradingEngine {
   }
 
   /**
+   * Altera o símbolo de trading
+   */
+  async setSymbol(symbol: string): Promise<void> {
+    if (this.state.openTrade) {
+      this.addLog('Não é possível mudar o símbolo com posição aberta', 'WARNING');
+      return;
+    }
+    
+    this.emit({ selectedSymbol: symbol, lastSignal: `Símbolo alterado para ${symbol}` });
+    this.klineBuffer = [];
+    
+    if (this.state.isActive) {
+      await this.loadInitialData();
+    }
+  }
+
+  /**
    * Carrega dados históricos de klines
    */
   private async loadInitialData(): Promise<void> {
     try {
-      this.klineBuffer = await binanceAPI.getKlines('BTCUSDT', '5m', 100);
+      this.klineBuffer = await binanceAPI.getKlines(this.state.selectedSymbol, '5m', 100);
       const lastClose = this.klineBuffer[this.klineBuffer.length - 1]?.close || 0;
       this.emit({ currentPrice: lastClose });
-      console.log(`[TradingEngine] ${this.klineBuffer.length} candles carregados`);
+      console.log(`[TradingEngine] ${this.klineBuffer.length} candles carregados para ${this.state.selectedSymbol}`);
     } catch (error) {
       console.error('[TradingEngine] Erro ao carregar dados:', error);
-      this.emit({ error: 'Falha ao carregar dados de mercado' });
+      this.emit({ error: `Falha ao carregar dados de ${this.state.selectedSymbol}` });
     }
   }
 
@@ -240,7 +261,7 @@ class TradingEngine {
       }
 
       // 1. Atualiza dados de mercado
-      const newKlines = await binanceAPI.getKlines('BTCUSDT', '5m', 5);
+      const newKlines = await binanceAPI.getKlines(this.state.selectedSymbol, '5m', 5);
       this.klineBuffer = [...this.klineBuffer.slice(-95), ...newKlines];
 
       const closes = this.klineBuffer.map(k => k.close);
@@ -340,22 +361,22 @@ class TradingEngine {
 
       console.log(
         `[TradingEngine] ${this.state.isDemoMode ? '[DEMO]' : '[REAL]'} Comprando ` +
-        `${quantity.toFixed(6)} BTC @ $${currentPrice.toFixed(2)}`
+        `${quantity.toFixed(6)} ${this.state.selectedSymbol} @ $${currentPrice.toFixed(2)}`
       );
 
       let order;
       if (this.state.isDemoMode) {
-        order = await binanceAPI.simulateBuyOrder('BTCUSDT', quantity, currentPrice);
+        order = await binanceAPI.simulateBuyOrder(this.state.selectedSymbol, quantity, currentPrice);
       } else {
         // ⚠️  OPERAÇÃO REAL
-        order = await binanceAPI.placeBuyOrder('BTCUSDT', quantity);
+        order = await binanceAPI.placeBuyOrder(this.state.selectedSymbol, quantity);
       }
 
-      this.addLog(`COMPRA: BTCUSDT @ $${order.price.toFixed(2)}`, 'SUCCESS');
+      this.addLog(`COMPRA: ${this.state.selectedSymbol} @ $${order.price.toFixed(2)}`, 'SUCCESS');
 
       this.emit({
         openTrade: {
-          symbol: 'BTCUSDT',
+          symbol: this.state.selectedSymbol,
           buyPrice: order.price,
           quantity: order.quantity,
           buyTimestamp: order.timestamp,
